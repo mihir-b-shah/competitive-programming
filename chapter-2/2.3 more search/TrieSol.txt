@@ -1,0 +1,112 @@
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.HashMap;
+
+/*
+
+ ID: mihirsh1
+ LANG: JAVA
+ TASK: prefix
+
+ */
+public class prefix {
+
+    public static PrintWriter out;
+    public static String seq;
+    public static int[] storage;
+
+    public static class TrieNode {
+
+        private HashMap<Character, TrieNode> map;
+        private boolean isEnd;
+
+        public TrieNode() {
+            map = new HashMap<>();
+        }
+
+        public TrieNode add(Character c) {
+            TrieNode t1 = new TrieNode();
+            map.put(c, t1);
+            return t1;
+        }
+        
+        public boolean isEnd() {
+            return isEnd;
+        }
+
+        public void setEnd() {
+            isEnd = true;
+        }
+        
+        public boolean contains(Character c)
+        {
+            return map.containsKey(c);
+        }
+        
+        public TrieNode getValue(Character key)
+        {
+            return map.get(key);
+        }
+    }
+
+    public static void main(String[] args) throws FileNotFoundException, IOException {
+        out = new PrintWriter("prefix.out");
+        BufferedReader f = new BufferedReader(new FileReader("prefix.in"));
+
+        TrieNode t0 = new TrieNode();
+        TrieNode tI = t0;
+        
+        // Input the prefixes into a suffix trie
+        int ch = -2;
+
+        do {
+
+            while ((ch = f.read()) != 46 && ch != 32 && ch != 10 && ch != 13) {
+                if(!t0.contains((char) ch))
+                {
+                    TrieNode t1 = t0.add((char) ch);
+                    t0 = t1;
+                } else {
+                    t0 = t0.getValue((char) ch);
+                }
+            }
+            
+            t0.setEnd();
+            t0 = tI;
+            
+        } while (ch != 46);
+
+        f.skip(1);
+        TrieNode tP = t0;
+        int counter = 0;
+        
+        do {
+
+            while ((ch = f.read()) != -1 && ch != 13 && ch != 10) {
+                
+                if(t0.contains((char) ch))
+                {
+                    if(t0.getValue((char) ch).isEnd())
+                    {
+                        t0 = tP;
+                    } else {
+                        t0 = t0.getValue((char) ch);
+                        counter++;
+                        tP = t0;
+                    }
+                }
+                
+                
+            }
+
+        } while (ch != -1);
+
+        f.close();
+        out.flush();
+        out.close();
+    }
+}
