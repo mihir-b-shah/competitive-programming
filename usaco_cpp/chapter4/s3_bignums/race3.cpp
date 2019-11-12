@@ -19,8 +19,11 @@ using namespace std;
 
 typedef vector<int> vi;
 vector<vi> vii;
+long long incl;
+long long excl;
+int dist[50];
 
-bool cycle(int start) {
+inline bool cycle(int start) {
     queue<int> q;
     q.push(start);
     long long mem = 1LL;
@@ -40,6 +43,10 @@ bool cycle(int start) {
             }
             if((mem & (1LL << ref)) == 0) {
                 q.push(ref);
+            }
+            if(dist[ref] < dist[n]) {
+                incl |= (1LL << ref);
+                excl |= (1LL << n);
             }
         }
     }
@@ -77,7 +84,25 @@ int main() {
 
     fin.close();
     vii.pop_back();
-    
+
+    for(int i = 0; i<50; ++i) {
+        dist[i] = -1;
+    }
+        
+    queue<pair<int,int>> qu;
+    // first is id, second is dist
+    qu.push(make_pair(0,0));
+    while(!qu.empty()) {
+        pair<int,int>& p = qu.front();
+        qu.pop();
+        dist[p.first] = p.second;
+        vi& next = vii.at(p.first);
+        for(int i = 0; i<next.size(); ++i) {
+            if(dist[next[i]] == -1)
+                qu.push(make_pair(next[i],p.second+1));
+        }
+    }
+
     queue<pair<long long,int>> q;
     q.push(make_pair(1LL,0));
     int d = vii.size()-1;
@@ -121,11 +146,14 @@ int main() {
     }
 
     for(int i = 0; i<aux.size(); ++i) {
-        if(!cycle(aux.at(i))) {
+        if((incl & (1LL << aux.at(i)) == 0) && (!cycle(aux.at(i)) || (incl & (1LL << aux.at(i)) != 0))) {
             split += to_string(aux.at(i)) + ' ';
             ++split_ctr;
         }
     }
+
+    printf("incl: %x\n", incl);
+    printf("excl: %x\n", excl);
 
     if(out1.size() > 0) {
         out1.pop_back();
