@@ -1,4 +1,4 @@
-package chapter4.s2_netflow;
+package chapter4.s4_other;
 
 
 import java.util.*;
@@ -6,11 +6,11 @@ import java.io.*;
 
 /*
 ID: mihirsh1
-TASK: ditch
+TASK: milk6
 LANG: JAVA
 */
 
-public class ditch {
+public class milk6 {
     
     public static ArrayList<ArrayList<VP>> vect;
     public static int src;
@@ -41,10 +41,43 @@ public class ditch {
         }
     }
     
-    public static void main(String[] args) throws Exception {
-        Scanner f = new Scanner(new File("ditch.in"));
-        PrintWriter out = new PrintWriter("ditch.out");
+    public static class Pair {
+        public int src;
+        public int dest;
 
+        public Pair(int s, int d) {
+            src = s;
+            dest = d;
+        }
+        
+        @Override
+        public boolean equals(Object oth) {
+            if(oth instanceof Pair) {
+                return oth.hashCode() == hashCode();
+            } return false;
+        }
+        
+        @Override
+        public int hashCode() {
+            return src*dest;
+        }
+    }
+    
+    public static class FB {
+        public int forward;
+        public int backward;
+        public int src;
+        
+        public FB(int src) {  
+            this.src = src;
+        }
+    }
+    
+    public static void main(String[] args) throws Exception {
+        Scanner f = new Scanner(new File("milk6.in"));
+        PrintWriter out = new PrintWriter("milk6.out");
+
+        HashMap<Pair, FB> input = new HashMap<>();
         int N = f.nextInt();
         int M = f.nextInt();
         
@@ -56,17 +89,42 @@ public class ditch {
             int s = f.nextInt()-1;
             int e = f.nextInt()-1;
             int wt = f.nextInt();
-            
-            if(s == e)
+                        
+            if(s == e) {
                 continue;
+            }
             
-            VP v1 = new VP(e,wt,null);
-            VP v2 = new VP(s,0,v1);
+            Pair p;
+            if(!input.containsKey(p = new Pair(s,e))) {
+                FB fb = new FB(s);
+                fb.forward = wt;
+                input.put(p, fb);
+            } else {
+                FB fb = input.get(p);
+                if(fb.src == s) {
+                    fb.forward += wt;
+                } else {
+                    fb.backward += wt;
+                }
+            }
+        }
+        
+        Set<Map.Entry<Pair,FB>> set = input.entrySet();
+        for(Map.Entry<Pair,FB> entry: set) {
+            Pair p = entry.getKey();
+            FB fb = entry.getValue();
+            int s = p.src;
+            int e = p.dest;
+            int forw = fb.forward;
+            int back = fb.backward;
+            
+            VP v1 = new VP(e, forw, null);
+            VP v2 = new VP(s, back, v1);
             v1.twin = v2;
             
             vect.get(s).add(v1);
             vect.get(e).add(v2);
-        }
+        }     
         
         /* edmonds karp algorithm
         1. find path, determine if augmented.
