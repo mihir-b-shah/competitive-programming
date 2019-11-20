@@ -1,4 +1,3 @@
-package chapter4.s4_other;
 
 import java.util.*;
 import java.io.*;
@@ -68,21 +67,52 @@ public class frameup {
                 }
             }
         }
+        TreeMap<Byte, Integer> sort = new TreeMap<>();
         
         for(int i = 0; i<numframes; ++i) {
+            byte ctr = 0;
             for(int j = 0; j<numframes; ++j) {
                 if(matrix[i][j] == 0) {
                     fix(i,j);
                 }
+                if(matrix[i][j] == 2) {
+                    ++ctr;
+                }
             }
+            sort.put(ctr,i);
         }
         
+        for(byte[] b: matrix) {
+            System.out.println(Arrays.toString(b));
+        }
+        
+        Set<Map.Entry<Byte, Integer>> set = sort.entrySet();
+        set.forEach((entry) -> {
+            out.printf("%c", entry.getValue()+'A');
+        });
+        out.println();
+
         out.flush();
         out.close();
         f.close();
     }
     
-    public static void fix(int i, int j) {
-        for
+    /*
+     * Determines whether i > j.
+     */
+    public static byte fix(int i, int j) {
+        if(matrix[i][j] != 0) {
+            return matrix[i][j];
+        } else {
+            byte b;
+            for(int k = 0; k<matrix.length; ++k) {
+                if(k != i && k != j && (b = fix(i,k)) == fix(k,j)) {
+                    matrix[i][j] = b;
+                    return b;
+                }
+            }
+        }
+        System.err.println("indet case!");
+        return 0;
     }
 }
