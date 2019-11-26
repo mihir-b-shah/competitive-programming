@@ -68,6 +68,10 @@ public class frameup {
             }
         }
         TreeMap<Byte, Integer> sort = new TreeMap<>();
+        for(byte[] b: matrix) {
+            System.out.println(Arrays.toString(b));
+        }
+        
         
         for(int i = 0; i<numframes; ++i) {
             byte ctr = 0;
@@ -86,12 +90,20 @@ public class frameup {
             System.out.println(Arrays.toString(b));
         }
         
+        StringBuilder sb = new StringBuilder();
         Set<Map.Entry<Byte, Integer>> set = sort.entrySet();
         set.forEach((entry) -> {
-            out.printf("%c", entry.getValue()+'A');
+            sb.append((char) (entry.getValue()+'A'));
         });
-        out.println();
+        String print = sb.toString();
+        for(int i = 0; i<matrix.length-1; ++i) {
+            for(int j = i+1; j<matrix.length; ++j) {
+                if(matrix[i][j] == 0)
+                    System.out.printf("%c->%c%n", 'A'+i, 'A'+j);
+            }
+        }
 
+        out.println(print);
         out.flush();
         out.close();
         f.close();
@@ -101,6 +113,7 @@ public class frameup {
      * Determines whether i > j.
      */
     public static byte fix(int i, int j) {
+        System.out.printf("%d,%d%n", i, j);
         if(matrix[i][j] != 0) {
             return matrix[i][j];
         } else {
@@ -112,7 +125,6 @@ public class frameup {
                 }
             }
         }
-        System.err.println("indet case!");
         return 0;
     }
 }
