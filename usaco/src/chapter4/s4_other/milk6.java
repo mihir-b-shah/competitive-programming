@@ -1,6 +1,5 @@
 package chapter4.s4_other;
 
-
 import java.util.*;
 import java.io.*;
 
@@ -11,171 +10,90 @@ LANG: JAVA
 */
 
 public class milk6 {
-    
-    public static ArrayList<ArrayList<VP>> vect;
-    public static int src;
-    public static int sink;
-    public static boolean[] vis;
-    public static boolean eject = false;
-    public static int INF = 1_000_000_000;
-    public static int curr_flow = 0;
-    
-    public static class VP implements Comparable<VP> {
-        public int id;
-        public int flow;
-        public int wt;
-        public VP twin;
-        
-        public VP(int id, int wt, VP ref) {
-            this.id = id; this.wt = wt; twin=ref;
-        }
-        
-        @Override
-        public int compareTo(VP v) {
-            return v.wt-wt;
-        }
-        
-        @Override
-        public String toString() {
-            return String.format("<%d, %d/%d>", id+1, flow, wt);
-        }
-    }
-    
-    public static class Pair {
-        public int src;
-        public int dest;
+    public static int N, M;
+    public static long[][] costs = new long[33][33], oldCosts = new long[33][33];
+    public static Edge[] edges = new Edge[1001];
+    public static int[] depths = new int[33];
+    public static Queue<Integer> queue = new LinkedList<Integer>();
 
-        public Pair(int s, int d) {
-            src = s;
-            dest = d;
-        }
-        
-        @Override
-        public boolean equals(Object oth) {
-            if(oth instanceof Pair) {
-                return oth.hashCode() == hashCode();
-            } return false;
-        }
-        
-        @Override
-        public int hashCode() {
-            return src*dest;
-        }
-    }
-    
-    public static class FB {
-        public int forward;
-        public int backward;
-        public int src;
-        
-        public FB(int src) {  
-            this.src = src;
-        }
-    }
-    
-    public static void main(String[] args) throws Exception {
-        Scanner f = new Scanner(new File("milk6.in"));
-        PrintWriter out = new PrintWriter("milk6.out");
-
-        HashMap<Pair, FB> input = new HashMap<>();
-        int N = f.nextInt();
-        int M = f.nextInt();
-        
-        vect = new ArrayList<>();
-        for(int i = 0; i<M; i++) 
-            vect.add(new ArrayList<>());
-        
-        for(int i = 0; i<N; i++) {
-            int s = f.nextInt()-1;
-            int e = f.nextInt()-1;
-            int wt = f.nextInt();
-                        
-            if(s == e) {
-                continue;
-            }
-            
-            Pair p;
-            if(!input.containsKey(p = new Pair(s,e))) {
-                FB fb = new FB(s);
-                fb.forward = wt;
-                input.put(p, fb);
-            } else {
-                FB fb = input.get(p);
-                if(fb.src == s) {
-                    fb.forward += wt;
-                } else {
-                    fb.backward += wt;
+    public static boolean bfs() {
+        Arrays.fill(depths, 0);
+        depths[1] = 1;
+        queue.add(1);
+        while (!queue.isEmpty()) {
+            int i = queue.remove();
+            for (int j = 1; j <= N; j++) {
+                if (costs[i][j] > 0 && depths[j] == 0) {
+                    depths[j] = depths[i] + 1;
+                    queue.add(j);
                 }
             }
         }
-        
-        Set<Map.Entry<Pair,FB>> set = input.entrySet();
-        for(Map.Entry<Pair,FB> entry: set) {
-            Pair p = entry.getKey();
-            FB fb = entry.getValue();
-            int s = p.src;
-            int e = p.dest;
-            int forw = fb.forward;
-            int back = fb.backward;
-            
-            VP v1 = new VP(e, forw, null);
-            VP v2 = new VP(s, back, v1);
-            v1.twin = v2;
-            
-            vect.get(s).add(v1);
-            vect.get(e).add(v2);
-        }     
-        
-        /* edmonds karp algorithm
-        1. find path, determine if augmented.
-        2. backtrack and change flows-p
-        */
-        
-        src = 0;
-        sink = M-1;       
-        vis = new boolean[vect.size()];
-        int flow = 0;
-        
-        do {
-            eject = false;
-            curr_flow = 0;
-            Arrays.fill(vis,false);
-            recur(src, INF);
-            flow += curr_flow;
-            //printVect();
-            //System.out.println();
-        } while(eject);
-        
-        out.println(flow);
-        out.flush();
-        out.close();
-        f.close();
+        return depths[N] != 0;
     }
-    
-    public static void recur(int s, int f) {
-        if(eject) return;
-        vis[s] = true;
-        if(s == sink) {
-            eject = true;
-            curr_flow = f;
-            //System.out.println(s+1);
-            return;
+
+    public static long dfs(int i, long max) {
+        if (i == N) {
+            return max;
         }
-        
-        ArrayList<VP> next = vect.get(s);
-        for(VP v: next) 
-            if(!eject && !vis[v.id] && v.flow<v.wt) {
-                recur(v.id, Math.min(f, v.wt-v.flow));
-                v.flow += curr_flow;
-                v.twin.flow = -v.flow;
+        long flow = 0;
+        for (int j = 1; j <= N; j++) {
+            if (depths[j] - depths[i] == 1 && costs[i][j] != 0) {
+                long d = dfs(j, Math.min(max - flow, costs[i][j]));
+                flow += d;
+                costs[i][j] -= d;
+                costs[j][i] += d;
             }
-        
-        //if(eject) System.out.println(s+1);
+        }
+        if (flow == 0) depths[i] = 0;
+        return flow;
     }
     
-    public static void printVect() {
-        for(int i = 0; i<vect.size(); i++) {
-            System.out.printf("%d: %s%n", i+1, vect.get(i));
+    public static class Edge {
+        int u, v;
+        long w;
+
+        public Edge(String[] line) {
+            this.u = Integer.parseInt(line[0]);
+            this.v = Integer.parseInt(line[1]);
+            this.w = Long.parseLong(line[2]);
+            oldCosts[u][v] += w * 1001 + 1;
         }
+    }
+
+    public static void main(String[] args) throws Exception {
+        BufferedReader br = new BufferedReader(new FileReader("milk6.in"));
+        String[] line = br.readLine().split(" ");
+        N = Integer.parseInt(line[0]);
+        M = Integer.parseInt(line[1]);
+        for (int i = 0; i < M; i++) {
+            edges[i] = new Edge(br.readLine().split(" "));
+        }
+        for (int i = 0; i < oldCosts.length; i++) {
+            System.arraycopy(oldCosts[i], 0, costs[i], 0, oldCosts[i].length);
+        }
+        br.close();
+        long flow = 0;
+        while (bfs()) {
+            flow += dfs(1, Long.MAX_VALUE);
+        }
+        PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("milk6.out")));
+        out.println((long) (flow / 1001) + " " + (long) (flow % 1001));
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < oldCosts.length; j++) {
+                System.arraycopy(oldCosts[j], 0, costs[j], 0, oldCosts[j].length);
+            }
+            costs[edges[i].u][edges[i].v] -= edges[i].w;
+            long newFlow = 0;
+            while (bfs()) {
+                newFlow += dfs(1, Long.MAX_VALUE);
+            }
+            if (newFlow + edges[i].w == flow) {
+                out.println(i + 1);
+                oldCosts[edges[i].u][edges[i].v] -= edges[i].w;
+                flow -= edges[i].w;
+            }
+        }
+        out.close();
     }
 }
