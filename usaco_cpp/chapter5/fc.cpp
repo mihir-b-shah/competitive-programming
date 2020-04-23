@@ -12,7 +12,7 @@ LANG: C++
 #include <algorithm>
 
 const double INF = 2000000.0;
-const double EPS = 1e-5;
+const double EPS = 1e-8;
 
 class Point {
 	protected:
@@ -76,12 +76,12 @@ bool ccw(Point* before, Point* curr, Point* after) {
 	
 	if(fabs(ang1) < EPS) {
 		zero1 = true;
-	} else if(fabs(ang1-M_PI) < EPS) {
+	} else if(fabs(ang1-M_PI) < EPS || fabs(ang1+M_PI) < EPS) {
 		pi1 = true;
 	}
 	if(fabs(ang2) < EPS) {
 		zero2 = true;
-	} else if(fabs(ang2-M_PI) < EPS) {
+	} else if(fabs(ang2-M_PI) < EPS || fabs(ang2+M_PI) < EPS) {
 		pi2 = true;
 	}
 
@@ -89,16 +89,16 @@ bool ccw(Point* before, Point* curr, Point* after) {
 		return true;
 	}
 	if(zero1) {
-		return ang2 > 0;
+		return ang2 >= 0;
 	}
 	if(pi1) {
-		return ang2 < 0;
+		return ang2 <= 0;
 	}
 	if(zero2) {
-		return ang1 < 0;
+		return ang1 <= 0;
 	}
 	if(pi2) {
-		return ang1 > 0;
+		return ang1 >= 0;
 	}
 	if(ang1 > 0 ^ ang2 > 0) {
 		if(ang1 > 0) {
@@ -131,7 +131,7 @@ int main() {
 	using namespace std;
 	int buf;
 	double buf1, buf2;
-	
+
 	ifstream fin("fc.in");
 	fin >> buf;
 	const int N = buf;
@@ -151,18 +151,12 @@ int main() {
 			p0 = points[i];
 		}
 	}
-	
+
 	sort(points, points+N, compare);
 	vector<Point*> stk;
+	stk.push_back(&p0);
 
-	/*
-	for(int i = 0; i<N; ++i) {
-		printf("%f %f\n", points[i].getX(), points[i].getY());
-	}
-	printf("\n");
-	*/
-
-	for(Point* ptr = points; ptr!=points+N; ++ptr) {
+	for(Point* ptr = points+1; ptr!=points+N; ++ptr) {
 		int size;
 		while((size = stk.size())>1 && 
 				!ccw(stk[size-2], stk[size-1], ptr)) {
@@ -180,10 +174,11 @@ int main() {
 	// get front and back
 	double output = dist(stk[0], stk[stk.size()-1]);
 	const int size = stk.size();
+
 	for(int i = 0; i<size-1; ++i) {
 		output += dist(stk[i], stk[i+1]);
 	}
-
+	
 	FILE* fout = fopen("fc.out", "w");
 	fprintf(fout, "%.2f\n", output);
 	fflush(fout);
