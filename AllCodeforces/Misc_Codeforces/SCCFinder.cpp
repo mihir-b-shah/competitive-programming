@@ -1,29 +1,41 @@
 
-#include <list>
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <unordered_set>
+#include <unordered_map>
 
 using namespace std;
-
-static vector<list<int>> adjList;
 
 struct Node {
     int rank;
     Node* parent;
 };
 
+struct Vector {
+    vector<int> vect;
+    int msize;
+    
+    vector<int>& v(){
+        return vect;
+    }
+};
+
 class DisjointSet {
     private:
         vector<Node> nodes;
+        int card;
     public:
         DisjointSet(){ 
         }
         ~DisjointSet(){
         }
+        int cardinality(){
+            return card;
+        }
         void build(int N){
             nodes.resize(N);
+            card = N;
             for(int i = 0; i<N; ++i) {
                 nodes[i].rank = 0;
                 nodes[i].parent = &nodes[i];
@@ -43,6 +55,10 @@ class DisjointSet {
             Node* uTree = find(u);
             Node* vTree = find(v);
 
+            if(uTree == vTree){
+                return;
+            }
+            
             // assume that rank(uTree) > rank(vTree)
             if(uTree->rank < vTree->rank) {
                 uTree->parent = vTree;
@@ -51,6 +67,8 @@ class DisjointSet {
                 vTree->parent = uTree;
                 uTree->rank = 1+vTree->rank;
             }
+            
+            --card;
         }
 };
 
@@ -93,16 +111,10 @@ class Stack {
         }
 };
 
-static void printLinkList(int src, list<int>& loc){
-    cout << "Link list of " << (src+1) << ": ";
-    for(auto iter = loc.begin(); iter!=loc.end(); ++iter){
-        cout << (*iter+1) << ' ';
-    }
-    cout << '\n';
-}
+static vector<Vector> adjList;
 
 static void dfs(Stack& stack, int v){
-    cout << "dfs: " << (v+1) << '\n';
+    // cout << "dfs: " << (v+1) << '\n';
     if(stack.find(v)){
         // unwind the stack and view the cycle.
         int idx = stack.size()-1;
@@ -119,17 +131,24 @@ static void dfs(Stack& stack, int v){
         cout << '\n';
         return;
     }
+    
     stack.push(v);
-    list<int>& loc = adjList[v];
-    auto iter = loc.begin();
-    printLinkList(v, loc);
-    while(iter != loc.end()){
+    Vector& loc = adjList[v];
+
+    for(auto iter = loc.v().rbegin()+loc.msize; iter != loc.v().rend(); ++iter){
         dfs(stack, *iter);
-        iter = loc.erase(iter);
-        printLinkList(v, loc);
+        ++loc.msize;
     }
+
     stack.pop();
-    cout << "backtrack: " << (v+1) << '\n';
+    // cout << "backtrack: " << (v+1) << '\n';
+}
+
+long long token(int ii, int ie){
+    long long v = ii;
+    v <<= 32;
+    v |= ie;
+    return v;
 }
 
 int main() {
@@ -141,16 +160,62 @@ int main() {
     for(int i = 0; i<E; ++i) {
         int buf1,buf2;
         fin >> buf1 >> buf2;
-        adjList[buf1-1].push_front(buf2-1);
+        adjList[buf1-1].vect.push_back(buf2-1);
+        adjList[buf1-1].msize = 0;
     }
+    fin.close();
     
     Stack stack;
     stack.resize(V);
     dsu.build(V);
     dfs(stack, 0);
     
-    cout << '\n';
+    //cout << '\n';
+    /*
     for(int i = 0; i<V; ++i) {
         cout << dsu.find(i) << '\n';
     }
+    cout << "Cardinality: " << dsu.cardinality() << '\n';
+    */
+    
+    vector<vector<int>> compList;
+    compList.resize(dsu.cardinality());
+    
+    unordered_set<long long> edgeCheck;
+    unordered_map<Node*,int> dsuMap;
+    int ctr = 0;
+    
+    for(int i = 0; i<V; ++i){
+        if(dsuMap.find(dsu.find(i)) == dsuMap.end()){
+            dsuMap[dsu.find(i)] = ctr++;
+        }
+    }        
+    
+    for(int i = 0; i<V; ++i) {
+        vector<int>& edges = adjList[i].v();
+        // create method.
+        for(int edge: edges){
+            int ii = dsuMap[dsu.find(i)];
+            int ie = dsuMap[dsu.find(edge)];
+            if(ii != ie && edgeCheck.find(token(ii,ie)) == edgeCheck.end()){
+                compList[ii].push_back(ie);
+                edgeCheck.insert(token(ii,ie));
+            } 
+        }
+    }
+    
+    for(int i = 0; i<compList.size(); ++i){
+        vector<int>& edges = compList[i];
+        cout << i << ": ";
+        for(int j: edges){
+            cout << j << ' ';
+        }
+        cout << '\n';
+    }
+    cout << '\n';
+    
+    // run a topological sort now??
+    
+    
+    return 0;
 }
