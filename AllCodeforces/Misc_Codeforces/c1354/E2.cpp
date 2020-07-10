@@ -1,37 +1,37 @@
 
-#pragma GCC optimize("Ofast")
-
 #include <iostream>
 #include <vector>
-#include <cstring>
+#include <algorithm>
 #include <unordered_map>
 
 using namespace std;
 
+template<typename T>
 class Matrix {
-	bool* matrix;
+	T* matrix;
 	int V;
 	int D;
 
 	public:
-		Matrix(int V, int D){
+		Matrix(int V, int D, T init){
 			this->V = V;
 			this->D = D;
-			matrix = new bool[V*D]();
+			matrix = new T[V*D];
+			fill(matrix, matrix+V*D, init); 
 		}
 		~Matrix(){
 			delete matrix;
 		}
-		bool get(int i, int j) const {
+		T get(int i, int j) const {
 			return matrix[D*i+j];
 		}
-		void set(int i, int j, bool v){
+		void set(int i, int j, T v){
 			matrix[D*i+j] = v;
 		}
 		void print(std::ostream& out){
 			for(int i = 0; i<V; ++i){
 				for(int j = 0; j<D; ++j){
-					out << get(i,j) << ' ';
+					out << '(' << (get(i,j) >> 32) << ',' << (get(i,j)&0xffffffff) << ')' << ' ';
 				}
 				out << '\n';
 			}
@@ -39,7 +39,7 @@ class Matrix {
 };
 
 int V,E;
-Matrix* matrix;
+Matrix<bool>* matrix;
 
 enum Color {WHITE, RED, BLUE, GREEN};
 Color colors[5000] = {WHITE};
@@ -100,10 +100,14 @@ struct Pair {
 	}
 };
 
+/**Target first, then option index. */
 long long myhash(long long tgt, int v){
 	return (tgt << 32) + v;
 }
 
+vector<Pair> options;
+
+#define EMPTY 2147483647
 int main(){
 	ios_base::sync_with_stdio(false);
 	cin.tie(NULL);
@@ -113,8 +117,7 @@ int main(){
 	cin >> tgtRed >> tgtBlue >> _tgt;
 	tgtRed += _tgt;
 
-	Matrix m(V,V);
-	
+	Matrix<bool> m(V,V,false);	
 	matrix = &m;
 	int u,v;
 	for(int i = 0; i<E; ++i){
@@ -124,7 +127,6 @@ int main(){
 	}
 
 	int next;
-	vector<Pair> options;
 	groups.resize(V);
 
 	while((next = scan()) < V){
@@ -139,43 +141,54 @@ int main(){
 		options.push_back(Pair(colorCts[RED], colorCts[BLUE]));
 	}
 
-	Matrix dp(options.size()+1, V+1);
+	Matrix<long long> dp(options.size()+1, V+1, EMPTY);
+	
 	dp.set(0, 0, true);
-	unordered_map<long long, long long> lookup;
-
-	bool pred1,pred2;
+	bool pred1, pred2;
 	for(int i = 1; i<options.size()+1; ++i){
-		for(int j = 1; j<V+1; ++j){
-			pred1 = j >= options[i-1].one ? dp.get(i-1, j-options[i-1].one) : false;
-			pred2 = j >= options[i-1].two ? dp.get(i-1, j-options[i-1].two) : false;
-			if(pred1){
-				lookup[myhash(j,i)] = myhash(j-options[i-1].one, i-1); 
-			} else if(pred2){
-				lookup[myhash(j,i)] = myhash(j-options[i-1].two, i-1);
+		for(int j = 0; j<V+1; ++j){
+			if(j == 0){
+				if(options[i-1].one == 0 || options[i-1].two == 0){
+					dp.set(i, j, myhash(j, i-1));
+				}
+				continue;
 			}
-			dp.set(i, j, pred1 || pred2);
+			pred1 = j >= options[i-1].one ? (dp.get(i-1, j-options[i-1].one) != EMPTY) : false;
+			pred2 = j >= options[i-1].two ? (dp.get(i-1, j-options[i-1].two) != EMPTY) : false;
+			
+			if(pred1){
+				dp.set(i, j, myhash(j-options[i-1].one, i-1));
+			} else if(pred2){
+				dp.set(i, j, myhash(j-options[i-1].two, i-1));
+			}
 		}
 	}
+	
+	dp.print(cout);
+	dp.set(0, 0, EMPTY);
+	cout << options.size() << ' ' << tgtRed << '\n';
 
-	cout << (dp.get(options.size(), tgtRed) ? "YES" : "NO") << endl;
-	if(dp.get(options.size(), tgtRed)){
+	cout << (dp.get(options.size(), tgtRed) != EMPTY ? "YES" : "NO") << endl;
+	if(dp.get(options.size(), tgtRed) != EMPTY){
 		// time to backtrace.
 		long long hash = myhash(tgtRed, options.size());
 		int v = tgtRed; int idx = options.size();
 		int newV, newIdx;
 		int backCtr = 0;
-		while(lookup.find(hash) != lookup.end()){
-			long long next = lookup[hash];
-			newIdx = next & 0xffffffffLL;
-			newV = next >> 32;
+		while(dp.get(idx, v) != EMPTY){
+			long long next = dp.get(idx, v);
+			newV = next & 0xffffffffLL;
+			newIdx = next >> 32;
 			hash = myhash(newV, newIdx);
 			int option = v-newV;
 			if(options[idx-1].one != option){
 				vector<int>& myvect = groups[groups.size()-1-backCtr];
 				for(int e: myvect){
 					if(colors[e] == RED){
+						cout << "RAAAAR red" << endl;
 						colors[e] = BLUE;
 					} else {
+						cout << "RAAAAR blue" << endl;
 						colors[e] = RED;
 					}
 				}	
@@ -185,10 +198,10 @@ int main(){
 			++backCtr;
 		}
 
-		// allocate evenly between red/green.
+		// allocate enough for green.
 		int redCtr = 0;
 		for(int i = 0; i<V; ++i){
-			if(redCtr < tgtRed/2 && colors[i] == RED){
+			if(redCtr < tgtRed-_tgt && colors[i] == RED){
 				++redCtr;
 			} else if(colors[i] == RED){
 				colors[i] = GREEN;
