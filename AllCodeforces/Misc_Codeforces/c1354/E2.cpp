@@ -20,7 +20,7 @@ class Matrix {
 			fill(matrix, matrix+V*D, init); 
 		}
 		~Matrix(){
-			delete matrix;
+			// delete matrix;
 		}
 		T get(int i, int j) const {
 			return matrix[D*i+j];
@@ -31,7 +31,7 @@ class Matrix {
 		void print(std::ostream& out){
 			for(int i = 0; i<V; ++i){
 				for(int j = 0; j<D; ++j){
-					out << '(' << (get(i,j) >> 32) << ',' << (get(i,j)&0xffffffff) << ')' << ' ';
+					out << '(' << (get(i,j) >> 32) << ',' << ((get(i,j)&0xffffffff) == 2147483647 ? -1 : get(i,j) & 0xffffffff) << ')' << ' ';
 				}
 				out << '\n';
 			}
@@ -117,7 +117,8 @@ int main(){
 	cin >> tgtRed >> tgtBlue >> _tgt;
 	tgtRed += _tgt;
 
-	Matrix<bool> m(V,V,false);	
+	Matrix<bool> m(V,V,false);
+	
 	matrix = &m;
 	int u,v;
 	for(int i = 0; i<E; ++i){
@@ -127,10 +128,10 @@ int main(){
 	}
 
 	int next;
-	groups.resize(V);
 
 	while((next = scan()) < V){
 		colorCts[1] = 0; colorCts[2] = 0;
+		groups.push_back(vector<int>());
 		bool res = dfs(next, RED);
 		if(!res){
 			cout << "NO" << endl;
@@ -142,14 +143,14 @@ int main(){
 	}
 
 	Matrix<long long> dp(options.size()+1, V+1, EMPTY);
-	
+
 	dp.set(0, 0, true);
 	bool pred1, pred2;
 	for(int i = 1; i<options.size()+1; ++i){
 		for(int j = 0; j<V+1; ++j){
 			if(j == 0){
 				if(options[i-1].one == 0 || options[i-1].two == 0){
-					dp.set(i, j, myhash(j, i-1));
+					dp.set(i, j, myhash(i-1, j));
 				}
 				continue;
 			}
@@ -157,16 +158,14 @@ int main(){
 			pred2 = j >= options[i-1].two ? (dp.get(i-1, j-options[i-1].two) != EMPTY) : false;
 			
 			if(pred1){
-				dp.set(i, j, myhash(j-options[i-1].one, i-1));
+				dp.set(i, j, myhash(i-1, j-options[i-1].one));
 			} else if(pred2){
-				dp.set(i, j, myhash(j-options[i-1].two, i-1));
+				dp.set(i, j, myhash(i-1, j-options[i-1].two));
 			}
 		}
 	}
 	
-	dp.print(cout);
 	dp.set(0, 0, EMPTY);
-	cout << options.size() << ' ' << tgtRed << '\n';
 
 	cout << (dp.get(options.size(), tgtRed) != EMPTY ? "YES" : "NO") << endl;
 	if(dp.get(options.size(), tgtRed) != EMPTY){
@@ -185,13 +184,11 @@ int main(){
 				vector<int>& myvect = groups[groups.size()-1-backCtr];
 				for(int e: myvect){
 					if(colors[e] == RED){
-						cout << "RAAAAR red" << endl;
 						colors[e] = BLUE;
 					} else {
-						cout << "RAAAAR blue" << endl;
 						colors[e] = RED;
 					}
-				}	
+				}
 			}
 			v = newV;
 			idx = newIdx;
