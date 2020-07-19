@@ -63,6 +63,7 @@ pair<vector<int>,vector<int>> suffixArray(string& str){
 		int pi = c[i];
 		int j = p[pi-1];
 
+int* glob;
 		while(k+max(i,j) < str.length() && 
 			str[k+i] == str[k+j]) {
 			++k;
