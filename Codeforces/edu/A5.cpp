@@ -78,28 +78,18 @@ pair<vector<int>,vector<int>> suffixArray(string& str){
 int main(){
 	string str;
 	cin >> str;
-	auto res = suffixArray(str);
-	vector<int> p = res.first;
-	vector<int> lcp = res.second;
 
-	for(int i = 0; i<p.size(); ++i){
-		cout << p[i];
-		if(i < p.size()-1){
-			cout << ' ';
-		} else {
-			cout << '\n';
-		}
-	}
+	auto ret = suffixArray(str);
+	vector<int>& lcp = ret.second;
 
+	int sum = 0;
 	for(int i = 1; i<lcp.size(); ++i){
-		cout << lcp[i];
-		if(i < lcp.size()-1){
-			cout << ' ';
-		} else {
-			cout << '\n';
-		}
+		sum += lcp[i];
 	}
-
-	cout.flush();
+	long long output = str.size();
+	output *= str.size()-1;
+	output /= 2;
+	output -= sum;
+	cout << output << endl;
 	return 0;
 }
