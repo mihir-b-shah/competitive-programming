@@ -82,7 +82,7 @@ int main(){
 	auto ret = suffixArray(str);
 	vector<int>& lcp = ret.second;
 
-	int sum = 0;
+	long long sum = 0;
 	for(int i = 1; i<lcp.size(); ++i){
 		sum += lcp[i];
 	}
